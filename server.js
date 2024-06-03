@@ -27,12 +27,27 @@ async function run() {
 
     const database = client.db("medi-camp");
     const addCamp = database.collection("addCamp");
+    const participantInfo = database.collection("participantInfo");
 
     app.post('/addCamp', async (req, res) => {
       const camp = req.body;
       const result = await addCamp.insertOne(camp);
       res.send(result);
     });
+
+    app.post('/modalData/:id', async (req, res) => {
+      const values = req.body;
+      const id=req.params.id;
+      const result = await participantInfo.insertOne(values);
+      addCamp.updateOne(
+        { _id: new ObjectId(id) }, // Filter by the specific _id
+        { $inc: { 
+          participantCount: 1 } } // Increment the count field
+      );
+      res.send(result);
+    });
+
+
 
 
     app.get('/addCampData',async(req,res)=>{
@@ -47,6 +62,21 @@ async function run() {
       const result = await addCamp.findOne(query);
       res.send(result);
     })  
+
+    app.get('/allCamp/:email', async (req, res) => {
+      try {
+          const email = req.params.email;
+          // console.log("Email:", email);
+          
+          const query = { 'email': email };
+          const result = await addCamp.find(query).toArray(); // Use await to wait for the result
+          
+          res.send(result);
+      } catch (error) {
+          console.error("Error:", error);
+          res.status(500).send("Internal Server Error");
+      }
+  });
 
 
 
