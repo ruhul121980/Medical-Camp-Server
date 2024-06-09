@@ -1,5 +1,6 @@
 const express = require('express');
 const cors = require('cors');
+const bodyParser = require('body-parser');
 const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 const app = express();
 //i have to put it env file later
@@ -8,6 +9,7 @@ const port = process.env.PORT || 5000;
 
 app.use(cors());
 app.use(express.json());
+app.use(bodyParser.json());
 
 const uri = "mongodb+srv://Medi-Camp:D7yBt1PomnbYcNAP@cluster0.v1zto12.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0";
 
@@ -179,20 +181,49 @@ async function run() {
 
 
   // payment Intent
-  app.post('/create-payment-intent',async(req,res)=>{
-    const {price}=req.body;
-    const amount = parseInt(price*100);
+  // app.post('/create-payment-intent',async(req,res)=>{
+  //   const {campFees}=req.body;
+  //   const amount = parseInt(campFees*100);
 
-    const paymentIntent = await stripe.paymentIntents.create({
-      amount:amount,
-      currency:'usd',
-      payment_method_types:['card']
-    })
+  //   const paymentIntent = await stripe.paymentIntents.create({
+  //     amount:amount,
+  //     currency:'usd',
+  //     payment_method_types:['card']
+  //   })
 
-    res.send({
-      clientSecret:paymentIntent.client_secret
-    })
-  })
+  //   res.send({
+  //     clientSecret:paymentIntent.client_secret
+  //   })
+  // })
+
+  app.post('/create-payment-intent', async (req, res) => {
+    try {
+        const { campFees } = req.body;
+        if (typeof campFees !== 'number' || isNaN(campFees) || campFees <= 0 || campFees > 999999.99) {
+            console.error('Invalid camp fees amount:', campFees);
+            return res.status(400).send({ error: 'Invalid camp fees amount' });
+        }
+
+        const amount = Math.round(campFees * 100); // Convert to smallest currency unit (e.g., cents for USD)
+        console.log('Creating payment intent with amount:', amount);
+
+        const paymentIntent = await stripe.paymentIntents.create({
+            amount: amount,
+            currency: 'usd',
+            payment_method_types: ['card'],
+        });
+
+        res.send({
+            clientSecret: paymentIntent.client_secret,
+        });
+    } catch (error) {
+        console.error('Error creating payment intent:', error);
+        res.status(500).send({ error: 'Internal Server Error' });
+    }
+});
+  
+  
+  
   
   
 
