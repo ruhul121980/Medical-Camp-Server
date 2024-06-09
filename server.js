@@ -2,6 +2,8 @@ const express = require('express');
 const cors = require('cors');
 const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 const app = express();
+//i have to put it env file later
+const stripe=require('stripe')('sk_test_51PPO2h04OyLT3Gzbs41SuW41uVr3ctJoK58DpaS2ks02hoxOY8e4TLqo0N6p8OwcmOZB9gkbXqfUSXsWXow4kld800xYZ6kJ9L')
 const port = process.env.PORT || 5000;
 
 app.use(cors());
@@ -28,6 +30,7 @@ async function run() {
     const database = client.db("medi-camp");
     const addCamp = database.collection("addCamp");
     const participantInfo = database.collection("participantInfo");
+    
 
     app.post('/addCamp', async (req, res) => {
       const camp = req.body;
@@ -47,6 +50,8 @@ async function run() {
       res.send(result);
     });
 
+    
+
 
 
 
@@ -60,6 +65,13 @@ async function run() {
       const id=req.params.id;
       const query = {_id: new ObjectId(id) };
       const result = await addCamp.findOne(query);
+      res.send(result);
+    })  
+
+    app.get('/getFees/:id',async(req,res)=>{
+      const id=req.params.id;
+      const query = {_id: new ObjectId(id) };
+      const result = await participantInfo.findOne(query);
       res.send(result);
     })  
 
@@ -77,6 +89,112 @@ async function run() {
           res.status(500).send("Internal Server Error");
       }
   });
+
+
+  app.get('/registeredCampInfo/:email', async (req, res) => {
+    try {
+        const email = req.params.email;
+        // console.log("Email:", email);
+        
+        const query = {'participantEmail': email };
+        const result = await participantInfo.find(query).toArray(); 
+        
+        res.send(result);
+    } catch (error) {
+        console.error("Error:", error);
+        res.status(500).send("Internal Server Error");
+    }
+});
+
+  app.get('/participantInfo/:email', async (req, res) => {
+    try {
+        const email = req.params.email;
+        // console.log("Email:", email);
+        
+        const query = { 'participantEmail': email };
+        const result = await participantInfo.find(query).toArray(); 
+        
+        res.send(result);
+    } catch (error) {
+        console.error("Error:", error);
+        res.status(500).send("Internal Server Error");
+    }
+});
+
+
+  app.delete('/deleteCamp/:id',async(req,res)=>{
+    const id=req.params.id;
+    
+    const query={_id:new ObjectId(id)}
+    const result=await addCamp.deleteOne(query)
+    res.send(result)
+  })
+
+
+  app.put('/updateCamp/:id',async(req,res)=>{
+    const id=req.params.id;
+    const camp=req.body;
+    const filter={_id:new ObjectId(id)}
+    const options={upsert:true}
+    const updatedUser={
+      
+      $set:{
+        name:camp.name,
+        image:camp.image,
+        fees:camp.fees,
+        dateTime:camp.dateTime,
+        campLocation:camp.location,
+        location:camp.location,
+        healthcareProfessional:camp.healthcareProfessional,
+        description:camp.description
+  
+        
+       
+      }
+    }
+    const result=await addCamp.updateOne(filter,updatedUser,options)
+    res.send(result)
+  })
+
+
+  app.put('/updateParticipant/:email', async (req, res) => {
+    const email = req.params.email;
+    const info = req.body;
+    const filter = {'participantEmail': email };
+    const options = { upsert: true };
+    const updatedUser = {
+      $set: {
+        participantName: info.participantName,
+        phoneNumber: info.phoneNumber,
+        age: info.age
+      }
+    };
+    try {
+      const result = await participantInfo.updateMany(filter, updatedUser, options);
+      res.json(result);
+    } catch (error) {
+      res.status(500).send('Error updating participant information');
+    }
+  });
+
+
+  // payment Intent
+  app.post('/create-payment-intent',async(req,res)=>{
+    const {price}=req.body;
+    const amount = parseInt(price*100);
+
+    const paymentIntent = await stripe.paymentIntents.create({
+      amount:amount,
+      currency:'usd',
+      payment_method_types:['card']
+    })
+
+    res.send({
+      clientSecret:paymentIntent.client_secret
+    })
+  })
+  
+  
 
 
 
