@@ -181,6 +181,33 @@ app.get('/getRegisterInfo', async (req, res) => {
 });
 
 
+app.get('/participantCampsData/:email', async (req, res) => {
+  try {
+    // Find participant's registered camps data from the database
+    const email = req.params.email;
+    const participantCamps = await participantInfo.find({ 'participantEmail': email });
+
+    // If participant camps are found, extract relevant camp data
+    if (participantCamps.length > 0) {
+      const campData = participantCamps.map(camp => ({
+        _id: camp._id,
+        campName: camp.campName,
+        campFees: camp.campFees,
+        confirmationStatus: camp.confirmationStatus
+      }));
+
+      // Send camp data as response
+      res.json(campData);
+    } else {
+      // If participant camps are not found, send 404 error
+      res.status(404).json({ error: "Participant camps not found" });
+    }
+  } catch (error) {
+    console.error("Error fetching participant's registered camps data:", error);
+    res.status(500).json({ error: "Internal Server Error" });
+  }
+});
+
 
 
   app.delete('/deleteCamp/:id',async(req,res)=>{
