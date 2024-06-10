@@ -174,6 +174,13 @@ app.get('/paymentHistory/:email', async (req, res) => {
   }
 });
 
+app.get('/getRegisterInfo', async (req, res) => {
+  const cursor = participantInfo.find();
+  const result = await cursor.toArray();
+  res.send(result);
+});
+
+
 
 
   app.delete('/deleteCamp/:id',async(req,res)=>{
@@ -191,6 +198,14 @@ app.get('/paymentHistory/:email', async (req, res) => {
     const result=await participantInfo.deleteOne(query)
     res.send(result)
   })
+
+  app.delete('/deleteRegistration/:id', async (req, res) => {
+    const id = req.params.id;
+    const query = { _id: new ObjectId(id) };
+    const result = await participantInfo.deleteOne(query);
+    res.send(result);
+  });
+  
 
 
   app.put('/updateCamp/:id',async(req,res)=>{
@@ -260,6 +275,16 @@ app.get('/paymentHistory/:email', async (req, res) => {
     }
   });
 
+  app.put('/updateConfirmationStatus/:id', async (req, res) => {
+    const id = req.params.id;
+    const filter = { _id: new ObjectId(id) };
+    const updateDoc = {
+      $set: { confirmationStatus: 'Confirmed' },
+    };
+    const result = await participantInfo.updateOne(filter, updateDoc);
+    res.send(result);
+  });
+  
   
 
   // payment Intent
