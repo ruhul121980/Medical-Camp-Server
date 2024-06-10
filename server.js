@@ -185,7 +185,8 @@ app.get('/participantCampsData/:email', async (req, res) => {
   try {
     // Find participant's registered camps data from the database
     const email = req.params.email;
-    const participantCamps = await participantInfo.find({ 'participantEmail': email });
+    const participantCamps = await participantInfo.find({ 'participantEmail': email }).toArray();
+    console.log(participantCamps)
 
     // If participant camps are found, extract relevant camp data
     if (participantCamps.length > 0) {
