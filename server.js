@@ -30,8 +30,10 @@ async function run() {
     console.log("Pinged your deployment. You successfully connected to MongoDB!");
 
     const database = client.db("medi-camp");
+    const usersInfo = database.collection("usersInfo");
     const addCamp = database.collection("addCamp");
     const participantInfo = database.collection("participantInfo");
+    const paymentHistory = database.collection("paymentHistory");
     
 
     app.post('/addCamp', async (req, res) => {
@@ -53,8 +55,38 @@ async function run() {
     });
 
     
+    app.post('/paymentHistory', async (req, res) => {
+      const payment = req.body;
+      const id = req.body.id;
+      console.log("now", id);
+  
+      try {
+          const result = await paymentHistory.insertOne(payment);
+          const updateResult = await participantInfo.updateOne(
+              { _id: new ObjectId(id) },
+              { $set: { paymentStatus: 'paid' } } 
+          );
+  
+          res.send({ result, updateResult });
+      } catch (err) {
+          console.error(err);
+          res.status(500).send('Internal Server Error');
+      }
+  });
 
 
+  app.post('/register', async (req, res) => {
+    const { name, email, photoURL, contactNumber, address } = req.body;
+  
+    const newUser = { name, email, photoURL, contactNumber, address };
+  
+    try {
+      await usersInfo.insertOne(newUser);
+      res.status(201).send('User registered successfully');
+    } catch (error) {
+      res.status(500).send('Error registering user: ' + error.message);
+    }
+  });
 
 
     app.get('/addCampData',async(req,res)=>{
@@ -108,20 +140,40 @@ async function run() {
     }
 });
 
-  app.get('/participantInfo/:email', async (req, res) => {
-    try {
-        const email = req.params.email;
-        // console.log("Email:", email);
-        
-        const query = { 'participantEmail': email };
-        const result = await participantInfo.find(query).toArray(); 
-        
-        res.send(result);
-    } catch (error) {
-        console.error("Error:", error);
-        res.status(500).send("Internal Server Error");
+app.get('/participantInfo/:email', async (req, res) => {
+  try {
+    const email = req.params.email;
+    const query = { 'email': email };
+    const result = await usersInfo.findOne(query); // Use findOne to get a single document
+
+    if (!result) {
+      return res.status(404).send("User not found");
     }
+
+    res.send(result);
+  } catch (error) {
+    console.error("Error:", error);
+    res.status(500).send("Internal Server Error");
+  }
 });
+
+
+
+app.get('/paymentHistory/:email', async (req, res) => {
+  try {
+      const email = req.params.email;
+      // console.log("Email:", email);
+      
+      const query = { 'participantEmail': email };
+      const result = await paymentHistory.find(query).toArray(); 
+      
+      res.send(result);
+  } catch (error) {
+      console.error("Error:", error);
+      res.status(500).send("Internal Server Error");
+  }
+});
+
 
 
   app.delete('/deleteCamp/:id',async(req,res)=>{
@@ -129,6 +181,14 @@ async function run() {
     
     const query={_id:new ObjectId(id)}
     const result=await addCamp.deleteOne(query)
+    res.send(result)
+  })
+
+  app.delete('/cancelRegistration/:id',async(req,res)=>{
+    const id=req.params.id;
+    
+    const query={_id:new ObjectId(id)}
+    const result=await participantInfo.deleteOne(query)
     res.send(result)
   })
 
@@ -179,6 +239,28 @@ async function run() {
     }
   });
 
+  app.put('/updateOrganizerProfile/:email', async (req, res) => {
+    const email = req.params.email;
+    const info = req.body;
+    const filter = {'email': email };
+    const options = { upsert: true };
+    
+    const updatedUser = {
+      $set: {
+        name: info.name,
+        contactNumber: info.contactNumber,
+        photoURL:info.photoURL
+      }
+    };
+    try {
+      const result = await usersInfo.updateOne(filter, updatedUser, options);
+      res.json(result);
+    } catch (error) {
+      res.status(500).send('Error updating participant information');
+    }
+  });
+
+  
 
   // payment Intent
   // app.post('/create-payment-intent',async(req,res)=>{
