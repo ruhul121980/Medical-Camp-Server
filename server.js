@@ -34,6 +34,7 @@ async function run() {
     const addCamp = database.collection("addCamp");
     const participantInfo = database.collection("participantInfo");
     const paymentHistory = database.collection("paymentHistory");
+    const submitFeedback = database.collection("submitFeedback");
     
 
     app.post('/addCamp', async (req, res) => {
@@ -86,6 +87,13 @@ async function run() {
     } catch (error) {
       res.status(500).send('Error registering user: ' + error.message);
     }
+  });
+
+
+  app.post('/submitFeedback', async (req, res) => {
+    const campFeedback = req.body;
+    const result = await submitFeedback.insertOne(campFeedback);
+    res.send(result);
   });
 
 
