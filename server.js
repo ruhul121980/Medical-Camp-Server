@@ -218,6 +218,20 @@ app.get('/participantCampsData/:email', async (req, res) => {
 });
 
 
+app.get('/participantCount/:email', async (req, res) => {
+  try {
+      const email = req.params.email;
+      const query = {'participantEmail': email};
+      const count = await participantInfo.countDocuments(query);
+      res.send({ count: count });
+  } catch (error) {
+      console.error("Error:", error);
+      res.status(500).send("Internal Server Error");
+  }
+});
+
+
+
 
   app.delete('/deleteCamp/:id',async(req,res)=>{
     const id=req.params.id;
